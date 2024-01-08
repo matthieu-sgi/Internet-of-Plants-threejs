@@ -7,6 +7,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+console.log("Modules loaded");
 
 // Constants and settings
 const BLOOM_SCENE = 1;
@@ -25,6 +26,13 @@ const sphere_positions = {
     "plant_species": [0.050, 0.272, 0.052],
     "touch_interaction": [-0.265, 0.852, -0.206],
     "humidity": [0.055, 0.506, 0.018],
+};
+
+const spheres_description = {
+    "electronic": "Electronic",
+    "plant_species": "Plant species",
+    "touch_interaction": "Touch interaction",
+    "humidity": "Humidity",
 };
 
 // Scene setup
@@ -81,14 +89,14 @@ finalComposer.addPass(mixPass);
 finalComposer.addPass(outputPass);
 
 // GUI setup
-const gui = new GUI();
-const bloomFolder = gui.addFolder('bloom');
-bloomFolder.add(params, 'threshold', 0.0, 1.0).onChange(value => bloomPass.threshold = Number(value));
-bloomFolder.add(params, 'strength', 0.0, 3).onChange(value => bloomPass.strength = Number(value));
-bloomFolder.add(params, 'radius', 0.0, 1.0).step(0.01).onChange(value => bloomPass.radius = Number(value));
+// const gui = new GUI();
+// const bloomFolder = gui.addFolder('bloom');
+// bloomFolder.add(params, 'threshold', 0.0, 1.0).onChange(value => bloomPass.threshold = Number(value));
+// bloomFolder.add(params, 'strength', 0.0, 3).onChange(value => bloomPass.strength = Number(value));
+// bloomFolder.add(params, 'radius', 0.0, 1.0).step(0.01).onChange(value => bloomPass.radius = Number(value));
 
-const toneMappingFolder = gui.addFolder('tone mapping');
-toneMappingFolder.add(params, 'exposure', 0.1, 2).onChange(value => renderer.toneMappingExposure = Math.pow(value, 4.0));
+// const toneMappingFolder = gui.addFolder('tone mapping');
+// toneMappingFolder.add(params, 'exposure', 0.1, 2).onChange(value => renderer.toneMappingExposure = Math.pow(value, 4.0));
 
 // Bloom effect handling
 const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
@@ -117,61 +125,116 @@ function render() {
 }
 
 // Spheres setup
-class ClickableSphere {
-    constructor(x, y, z, radius, color) {
+class ClickableSphere{
+    constructor(x,y,z, radius, color, name){
+        this.name = name
         this.geometry = new THREE.SphereGeometry(radius, 10, 10);
-        this.material = new THREE.MeshBasicMaterial({ color: color, wireframe: true });
+        this.material = new THREE.MeshBasicMaterial({color: color,
+            wireframe: true,
+            opacity: 0.5,
+            transparent: true});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.mesh.position.set(x, y, z);
         this.mesh.layers.enable(BLOOM_SCENE);
     }
 
-    onClick() {
-        console.log("Clicked");
+    onClick(){
+        console.log("Clicked : " + this.name);
     }
+    onHover(){
+        console.log("Hovered : " + this.name);
+        this.material.color.setHex(0x00ff00);
+        // Add text in description box
+        let description_box = document.getElementsByClassName("description");
+        description_box[0].innerHTML = spheres_description[this.name];
+    }
+    defaultState(){
+        this.material.color.setHex(0x99C1F1);
+        let description_box = document.getElementsByClassName("description");
+        description_box[0].innerHTML = "";
+    }
+
+}
+let main_group = new THREE.Group();
+let spheres_group = new THREE.Group();
+main_group.add(spheres_group);
+// Generate spheres
+let spheres = {};
+for (let key in sphere_positions){
+    // Add sphere with uuid as key
+
+    let new_sphere = new ClickableSphere(sphere_positions[key][0], sphere_positions[key][1], sphere_positions[key][2], 0.03, 0x99C1F1, key);
+    // console.log(new_sphere.uuid)
+    spheres[key] = new_sphere;
+    spheres_group.add(spheres[key].mesh);
+    // scene.add(spheres[key].mesh);
 }
 
-let strength = 0;
 
-let main_group = new THREE.Group();
-Object.entries(sphere_positions).forEach(([key, pos]) => {
-    const sphere = new ClickableSphere(...pos, 0.03, 0x99C1F1);
-    main_group.add(sphere.mesh);
-});
-
-// Model loading
 let loader = new GLTFLoader();
-loader.load("assets/plant.glb", gltf => {
+
+loader.load("assets/plant.glb", function (gltf) {
     let plant_model = gltf.scene;
+    // Adjust the position, scale, or rotation if necessary
     plant_model.position.set(0, 0, 0);
     plant_model.scale.set(1, 1, 1);
     plant_model.rotation.set(0, 0, 0);
     main_group.add(plant_model);
+    // scene.add(plant_model);
 });
 scene.add(main_group);
 
-// Pointer and event listeners
-let pointer = new THREE.Vector2(2, 1);
+let raycaster = new THREE.Raycaster();
+let pointer = new THREE.Vector2(2,1);
+let intersected_objects = [];
+function pointerMove(event){
+    pointer.x  = ( event.clientX / window.innerWidth ) * 2 - 1;
+    pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
-function pointerMove(event) {
-    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    intersected_objects = raycaster.intersectObjects(main_group.children, true);
+
+    // console.log(intersected_objects);
+
+    if (intersected_objects.length > 0){
+        // console.log(intersected_objects[0].object.name);
+        // let intersected_object = intersected_objects[0].object;
+        // Get the class of the intersected object
+        let intersected_object = intersected_objects[0].object;
+        // console.log(intersected_object);
+        let clickedSphere = Object.values(spheres).find(sphere => sphere.mesh === intersected_object);
+        if (clickedSphere){
+            clickedSphere.onHover();
+        }else{
+            // Put all spheres back to default state
+            for (let key in spheres){
+                spheres[key].defaultState();
+            }
+        }
+        
+    }else{
+    for (let key in spheres){
+        spheres[key].defaultState();
+    }
 }
 
-document.addEventListener("pointermove", pointerMove);
+    // console.log(pointer)
+}
+document.addEventListener('pointermove', pointerMove);
+
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 });
-
+let strength = 0;
 // Animation loop
 const animate = () => {
     requestAnimationFrame(animate);
     strength += 0.02;
     bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.1);
-    console.log(bloomPass.strength);
+    // console.log(bloomPass.strength);
     controls.update();
     render();
 }

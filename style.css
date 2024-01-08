@@ -5,4 +5,15 @@ head, body {
 
 canvas {
     display: block;
+    z-index: 0;
+    position: absolute;
+}
+
+.description {
+    z-index: 1;
+    position: absolute;
+    top: 0; /* Adjust top position as needed */
+    left: 0; /* Adjust left position as needed */
+    /* Add other styling properties for your description */
+    color: white;
 }

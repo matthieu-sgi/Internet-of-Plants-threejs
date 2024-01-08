@@ -9,11 +9,17 @@ canvas {
     position: absolute;
 }
 
-.description {
-    z-index: 1;
+#labels{
     position: absolute;
-    top: 0; /* Adjust top position as needed */
-    left: 0; /* Adjust left position as needed */
-    /* Add other styling properties for your description */
-    color: white;
+    z-index: 1;
+    font-family: Arial;
+    font-size: 12px;
+    color: #fff;
+    background-color: #fff;
+    padding: 2px;
+    border: 1px solid #000;
+    border-radius: 2px;
+    /* disable mouse interaction */
+    pointer-events: none;
+
 }

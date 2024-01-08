@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+// import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 console.log("Modules loaded");
 
 // Constants and settings
@@ -21,6 +22,13 @@ const params = {
     exposure: 1
 };
 
+
+// CSS2DRenderer setup
+let labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize( window.innerWidth, window.innerHeight );
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0px';
+
 const sphere_positions = {
     "electronic": [-0.051, 0.178, 0.065],
     "plant_species": [0.050, 0.272, 0.052],
@@ -28,8 +36,10 @@ const sphere_positions = {
     "humidity": [0.055, 0.506, 0.018],
 };
 
+
+
 const spheres_description = {
-    "electronic": "Electronic",
+    "electronic": "The electronic part of the project is composed of an ESP32, a amplification circuit with a speaker and a electronical filter to capture the touch interaction with the plant.",
     "plant_species": "Plant species",
     "touch_interaction": "Touch interaction",
     "humidity": "Humidity",
@@ -122,6 +132,8 @@ function render() {
     bloomComposer.render();
     scene.traverse(restoreMaterial);
     finalComposer.render();
+    labelRenderer.render(scene, camera);
+
 }
 
 // Spheres setup
@@ -133,9 +145,33 @@ class ClickableSphere{
             wireframe: true,
             opacity: 0.5,
             transparent: true});
+        
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.mesh.position.set(x, y, z);
+        this.create2DLabel();
         this.mesh.layers.enable(BLOOM_SCENE);
+        labelRenderer
+
+    }
+    create2DLabel(){
+        this.description_div = document.createElement('div');
+        this.description_div.className = 'label';
+        this.description_div.textContent = spheres_description[this.name];
+        
+
+        this.description_label = new CSS2DObject(this.description_div);
+        this.description_label.position.set(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
+        this.description_label.scale.set(1, 1, 1);
+        // this.description_label.color = 0xffffff;
+        // this.description_label.zIndex = 1;
+        // Disable visibility of the label
+        this.description_label.element.style.visibility = "hidden";
+        this.description_label.name = this.name;
+        this.mesh.add(this.description_label);
+        
+
+        console.log(this.description_label)
+
     }
 
     onClick(){
@@ -144,14 +180,16 @@ class ClickableSphere{
     onHover(){
         console.log("Hovered : " + this.name);
         this.material.color.setHex(0x00ff00);
+        this.description_label.element.style.visibility = "visible";
         // Add text in description box
-        let description_box = document.getElementsByClassName("description");
-        description_box[0].innerHTML = spheres_description[this.name];
+        // let description_box = document.getElementsByClassName("description");
+        // description_box[0].innerHTML = spheres_description[this.name];
     }
     defaultState(){
         this.material.color.setHex(0x99C1F1);
-        let description_box = document.getElementsByClassName("description");
-        description_box[0].innerHTML = "";
+        this.description_label.element.style.visibility = "hidden";
+        // let description_box = document.getElementsByClassName("description");
+        // description_box[0].innerHTML = "";
     }
 
 }
@@ -230,6 +268,8 @@ window.addEventListener('resize', () => {
 });
 let strength = 0;
 // Animation loop
+
+document.getElementById("labels").appendChild(labelRenderer.domElement);
 const animate = () => {
     requestAnimationFrame(animate);
     strength += 0.02;

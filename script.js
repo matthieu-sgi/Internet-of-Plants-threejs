@@ -10,6 +10,9 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 console.log("Modules loaded");
 
+const velocity_default = 0.008;
+
+
 // Constants and settings
 const BLOOM_SCENE = 1;
 const bloomLayer = new THREE.Layers();
@@ -59,10 +62,21 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const canvas = document.getElementById('canvas');
 const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000, 1); // Adding black background
+// renderer.setClearColor(0x000000, 1); // Adding black background
+
+
+// Add background.jpg as background
+const loader_texture = new THREE.TextureLoader();
+const background_texture = loader_texture.load("assets/background.jpg");
+background_texture.mapping = THREE.EquirectangularReflectionMapping;
+background_texture.colorSpace = THREE.SRGBColorSpace;
+scene.background = background_texture;
+
+
 
 // Light setup
 const light = new THREE.AmbientLight(0xffffff, 10);
@@ -109,16 +123,6 @@ finalComposer.addPass(renderScene);
 finalComposer.addPass(mixPass);
 finalComposer.addPass(outputPass);
 
-// GUI setup
-// const gui = new GUI();
-// const bloomFolder = gui.addFolder('bloom');
-// bloomFolder.add(params, 'threshold', 0.0, 1.0).onChange(value => bloomPass.threshold = Number(value));
-// bloomFolder.add(params, 'strength', 0.0, 3).onChange(value => bloomPass.strength = Number(value));
-// bloomFolder.add(params, 'radius', 0.0, 1.0).step(0.01).onChange(value => bloomPass.radius = Number(value));
-
-// const toneMappingFolder = gui.addFolder('tone mapping');
-// toneMappingFolder.add(params, 'exposure', 0.1, 2).onChange(value => renderer.toneMappingExposure = Math.pow(value, 4.0));
-
 // Bloom effect handling
 const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
 const materials = {};
@@ -139,8 +143,13 @@ function restoreMaterial(obj) {
 
 // Render function
 function render() {
+    scene.background = null;
     scene.traverse(darkenNonBloomed);
+
     bloomComposer.render();
+    scene.background = background_texture;
+
+
     scene.traverse(restoreMaterial);
     finalComposer.render();
     labelRenderer.render(scene, camera);
@@ -300,14 +309,18 @@ function getIntersectedSphere(event){
     return false;
 }
 
+let target_velocity = velocity_default;
+
 function pointerMove(event){
     let clickedSphere = getIntersectedSphere(event);
     if (clickedSphere){
         clickedSphere.onHover();
+        target_velocity = 0;
     }else{
         // Put all spheres back to default state
         for (let key in spheres){
             spheres[key].defaultState();
+            target_velocity = velocity_default;
         }
     }
         
@@ -315,6 +328,7 @@ function pointerMove(event){
     if (clickedSphere === false){
     for (let key in spheres){
         spheres[key].defaultState();
+        target_velocity = velocity_default;
     }
 }
 
@@ -351,22 +365,49 @@ let rotate = 0;
 // Animation loop
 
 document.getElementById("labels-container").appendChild(labelRenderer.domElement);
+
+
+// async function requestApi(){
+//     // Create headers
+//     let headers = new Headers();
+//     // headers.append('Content-Type', 'application/json');
+//     // headers.append('Accept', 'application/json');
+//     // append Access-Control-Allow-Origin header to avoid CORS error
+//     headers.append('Access-Control-Allow-Origin', 'http://localhost:8000');
+//     // Create request
+//     let request = new Request("http://localhost:8000/api/humidity", {
+//         method: 'GET',
+//         headers: headers,
+//         // mode: 'cors'
+//     });
+//     // Send request
+//     let response = await fetch(request);
+
+
+//     // let response = await fetch("http://172.21.72.180:8000/api/humidity");
+//     let data = await response.json();
+//     console.log(data);
+//     return data;
+// }
+
+let velocity = velocity_default;
+
+
 const animate = () => {
     requestAnimationFrame(animate);
     const time = Date.now() * 0.0004;
     // main_group.rotation.x = time;
     if (!mouseDown){
         main_group.rotation.y = rotate;
-        rotate += 0.008;
+
+        velocity = THREE.MathUtils.lerp(velocity, target_velocity, 0.1);
+
+        rotate += velocity;
 
     }
-    // Make the spheres rotate
-    // for (let key in spheres){
-    //     spheres[key].mesh.rotation.y = -time;
-    // }
     strength += 0.02;
     bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.1);
-    // console.log(bloomPass.strength);
+
     controls.update();
     render();
 }

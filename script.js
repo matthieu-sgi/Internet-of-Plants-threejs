@@ -10,7 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 console.log("Modules loaded");
 
-const velocity_default = 0.000;
+const velocity_default = 0.003;
 
 
 // Constants and settings

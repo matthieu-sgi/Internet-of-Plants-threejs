@@ -24,7 +24,7 @@ const params = {
 
 
 // CSS2DRenderer setup
-let labelRenderer = new CSS2DRenderer();
+const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize( window.innerWidth, window.innerHeight );
 labelRenderer.domElement.style.position = 'absolute';
 labelRenderer.domElement.style.top = '0px';
@@ -39,10 +39,15 @@ const sphere_positions = {
 
 
 const spheres_description = {
-    "electronic": "The electronic part of the project is composed of an ESP32, a amplification circuit with a speaker and a electronical filter to capture the touch interaction with the plant.",
-    "plant_species": "Plant species",
-    "touch_interaction": "Touch interaction",
-    "humidity": "Humidity",
+    "electronic": {desc : "The electronic part of the project is composed of an ESP32, a amplification circuit with a speaker and a electronical filter to capture the touch interaction with the plant.",
+                        link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/hardware/pcb"},
+    "plant_species": {desc : "The plant species used in this project is the Pachira Glabra.",
+                        link: "https://en.wikipedia.org/wiki/Pachira_glabra"},
+    "touch_interaction": {desc : "The touch interaction is captured by the ESP32 and sent to the computer via a websocket.",
+                            link: "https://www.google.com"},
+    "humidity": {desc : "The humidity is measured using a capacitive sensor and sent to the computer via a websocket.",
+                    link: "https://www.google.com"},
+
 };
 
 // Scene setup
@@ -63,8 +68,10 @@ scene.add(light);
 function moveCamera(x, y, z) {
     camera.position.set(x, y, z);
 }
-moveCamera(1, 1, 2);
-camera.lookAt(scene.position);
+// camera.lookAt(scene.position);
+moveCamera(-1.05,  0, 0.1);
+// camera.rotateOnAxis(new THREE.Vector3(0, 1, 0), 0.2);
+// scene.y -= 10;
 
 // Post-processing setup
 const renderScene = new RenderPass(scene, camera);
@@ -150,32 +157,33 @@ class ClickableSphere{
         this.mesh.position.set(x, y, z);
         this.create2DLabel();
         this.mesh.layers.enable(BLOOM_SCENE);
-        labelRenderer
+        console.log(this.mesh.position);
+        console.log(x, y, z);
 
     }
-    create2DLabel(){
+    create2DLabel() {
         this.description_div = document.createElement('div');
         this.description_div.className = 'label';
-        this.description_div.textContent = spheres_description[this.name];
-        
-
+        this.description_div.textContent = spheres_description[this.name]["desc"];
+    
         this.description_label = new CSS2DObject(this.description_div);
-        this.description_label.position.set(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
+        // Set the label's position based on the sphere's coordinates
+        this.description_label.position.set(this.mesh.position.x, this.mesh.position.y*0.1, this.mesh.position.z);
         this.description_label.scale.set(1, 1, 1);
-        // this.description_label.color = 0xffffff;
-        // this.description_label.zIndex = 1;
-        // Disable visibility of the label
+        // Hide the label by default
         this.description_label.element.style.visibility = "hidden";
         this.description_label.name = this.name;
         this.mesh.add(this.description_label);
-        
-
-        console.log(this.description_label)
-
     }
 
     onClick(){
         console.log("Clicked : " + this.name);
+        // Open the link in a new tab
+        let link = document.createElement('a');
+        link.href = spheres_description[this.name]["link"];
+        link.target = "_blank";
+        link.click();
+
     }
     onHover(){
         console.log("Hovered : " + this.name);
@@ -202,10 +210,8 @@ for (let key in sphere_positions){
     // Add sphere with uuid as key
 
     let new_sphere = new ClickableSphere(sphere_positions[key][0], sphere_positions[key][1], sphere_positions[key][2], 0.03, 0x99C1F1, key);
-    // console.log(new_sphere.uuid)
     spheres[key] = new_sphere;
     spheres_group.add(spheres[key].mesh);
-    // scene.add(spheres[key].mesh);
 }
 
 
@@ -220,45 +226,70 @@ loader.load("assets/plant.glb", function (gltf) {
     main_group.add(plant_model);
     // scene.add(plant_model);
 });
+main_group.position.set(0, -0.5, 0);
 scene.add(main_group);
 
 let raycaster = new THREE.Raycaster();
 let pointer = new THREE.Vector2(2,1);
 let intersected_objects = [];
-function pointerMove(event){
+
+function getIntersectedSphere(event){
     pointer.x  = ( event.clientX / window.innerWidth ) * 2 - 1;
     pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
     raycaster.setFromCamera(pointer, camera);
     intersected_objects = raycaster.intersectObjects(main_group.children, true);
 
-    // console.log(intersected_objects);
 
     if (intersected_objects.length > 0){
-        // console.log(intersected_objects[0].object.name);
         // let intersected_object = intersected_objects[0].object;
         // Get the class of the intersected object
         let intersected_object = intersected_objects[0].object;
-        // console.log(intersected_object);
         let clickedSphere = Object.values(spheres).find(sphere => sphere.mesh === intersected_object);
-        if (clickedSphere){
-            clickedSphere.onHover();
-        }else{
-            // Put all spheres back to default state
-            for (let key in spheres){
-                spheres[key].defaultState();
-            }
-        }
-        
+        return clickedSphere;
+    }
+    return false;
+}
+
+function pointerMove(event){
+    let clickedSphere = getIntersectedSphere(event);
+    if (clickedSphere){
+        clickedSphere.onHover();
     }else{
+        // Put all spheres back to default state
+        for (let key in spheres){
+            spheres[key].defaultState();
+        }
+    }
+        
+    
+    if (clickedSphere === false){
     for (let key in spheres){
         spheres[key].defaultState();
     }
 }
 
-    // console.log(pointer)
 }
 document.addEventListener('pointermove', pointerMove);
+
+// boolean to check if the mouse is down
+let mouseDown = false;
+function pointerDown(event){
+    mouseDown = true;
+
+    let clickedSphere = getIntersectedSphere(event);
+    if (clickedSphere){
+        clickedSphere.onClick();
+    }
+
+    
+}
+document.addEventListener('pointerdown', pointerDown);
+
+function pointerUp(event){
+    mouseDown = false;
+}
+document.addEventListener('pointerup', pointerUp);
 
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -272,6 +303,17 @@ let strength = 0;
 document.getElementById("labels").appendChild(labelRenderer.domElement);
 const animate = () => {
     requestAnimationFrame(animate);
+    const time = Date.now() * 0.0004;
+    // main_group.rotation.x = time;
+    if (!mouseDown){
+        main_group.rotation.y = time * 0.3;
+
+    }
+    // Make the spheres rotate
+    // for (let key in spheres){
+    //     spheres[key].mesh.rotation.y = -time;
+    // }
+
     strength += 0.02;
     bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.1);
     // console.log(bloomPass.strength);

@@ -9,15 +9,26 @@ canvas {
     position: absolute;
 }
 
-#labels{
+#labels-container{
+    pointer-events: none;
+}
+
+.labels{
     position: absolute;
     z-index: 1;
     font-family: Arial;
     font-size: 12px;
     color: #fff;
+    border: 2px solid #00f5ff; /* Set a futuristic border color */
+    padding: 10px; /* Adjust padding for spacing */
+    background-color: rgba(0, 0, 0, 0.7); /* Add a semi-transparent background */
+    border-radius: 5px; /* Add rounded corners for a modern look */
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.5); /* Add a subtle box shadow */
+    /* add a nice box */
+
     /* background-color: #fff; */
     /* padding: 2px; */
-    /* border: 1px solid #000; */
+    /* border: 1px solid #fff; */
     /* border-radius: 2px; */
     /* disable mouse interaction */
     pointer-events: none;

@@ -39,7 +39,11 @@ const sphere_positions = {
 
 
 const spheres_description = {
-    "electronic": {desc : "The electronic part of the project is composed of an ESP32, a amplification circuit with a speaker and a electronical filter to capture the touch interaction with the plant.",
+    "electronic": {desc : "The electronic part of the project is composed of many elements :\n\
+     - an ESP32\n\
+     - an amplification circuit with a speaker\n\
+     - an electronical filter to capture the touch interaction with the plant\n\
+     Click on the sphere to reach the github repository.",
                         link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/hardware/pcb"},
     "plant_species": {desc : "The plant species used in this project is the Pachira Glabra.",
                         link: "https://en.wikipedia.org/wiki/Pachira_glabra"},
@@ -142,6 +146,38 @@ function render() {
     labelRenderer.render(scene, camera);
 
 }
+class CustomTriangleWave extends THREE.Curve{
+    constructor(scale=1){
+        super();
+        this.scale = scale;
+    }
+    getPoint(t){
+        let v_ret = new THREE.Vector3();
+        v_ret.x = t;
+        v_ret.y = Math.abs((2 / Math.PI) * Math.asin(Math.sin(2 * Math.PI * t)));
+        v_ret.z = 0;
+        return v_ret.multiplyScalar(this.scale);
+    }
+}
+class Background{
+    constructor(scale=1){
+        const triangularWave = new CustomTriangleWave(scale);
+
+
+        // Use BufferGeometry and BufferAttribute for efficiency
+        // const geometry = new THREE.BufferGeometry().setFromPoints(triangularWave.getPoints(100));
+
+        // const material = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+        
+        const geometry = new THREE.TubeGeometry(triangularWave, 100, 1, 1, true);
+        const material = new THREE.MeshBasicMaterial({color: 0xffffff, side: THREE.DoubleSide});
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.position.set(0, 0, 0);
+
+    }
+
+
+}
 
 // Spheres setup
 class ClickableSphere{
@@ -163,12 +199,14 @@ class ClickableSphere{
     }
     create2DLabel() {
         this.description_div = document.createElement('div');
-        this.description_div.className = 'label';
-        this.description_div.textContent = spheres_description[this.name]["desc"];
+        this.description_div.className = 'labels';
+        this.description_div.innerText = spheres_description[this.name]["desc"];
+
+
     
         this.description_label = new CSS2DObject(this.description_div);
         // Set the label's position based on the sphere's coordinates
-        this.description_label.position.set(this.mesh.position.x, this.mesh.position.y*0.1, this.mesh.position.z);
+        this.description_label.position.set(0.3, 0.1, 0); // Relative to the sphere
         this.description_label.scale.set(1, 1, 1);
         // Hide the label by default
         this.description_label.element.style.visibility = "hidden";
@@ -189,6 +227,8 @@ class ClickableSphere{
         console.log("Hovered : " + this.name);
         this.material.color.setHex(0x00ff00);
         this.description_label.element.style.visibility = "visible";
+        // $('html,body').css('cursor', 'pointer');
+        document.body.style.cursor = "pointer";
         // Add text in description box
         // let description_box = document.getElementsByClassName("description");
         // description_box[0].innerHTML = spheres_description[this.name];
@@ -196,6 +236,7 @@ class ClickableSphere{
     defaultState(){
         this.material.color.setHex(0x99C1F1);
         this.description_label.element.style.visibility = "hidden";
+        document.body.style.cursor = "default";
         // let description_box = document.getElementsByClassName("description");
         // description_box[0].innerHTML = "";
     }
@@ -204,6 +245,9 @@ class ClickableSphere{
 let main_group = new THREE.Group();
 let spheres_group = new THREE.Group();
 main_group.add(spheres_group);
+
+
+
 // Generate spheres
 let spheres = {};
 for (let key in sphere_positions){
@@ -214,10 +258,15 @@ for (let key in sphere_positions){
     spheres_group.add(spheres[key].mesh);
 }
 
+// Add background
+// let background = new Background();
+// scene.add(background.mesh);
+
+
 
 let loader = new GLTFLoader();
 
-loader.load("assets/plant.glb", function (gltf) {
+loader.load("assets/plant_modified.glb", function (gltf) {
     let plant_model = gltf.scene;
     // Adjust the position, scale, or rotation if necessary
     plant_model.position.set(0, 0, 0);
@@ -298,22 +347,23 @@ window.addEventListener('resize', () => {
     renderer.setPixelRatio(window.devicePixelRatio);
 });
 let strength = 0;
+let rotate = 0;
 // Animation loop
 
-document.getElementById("labels").appendChild(labelRenderer.domElement);
+document.getElementById("labels-container").appendChild(labelRenderer.domElement);
 const animate = () => {
     requestAnimationFrame(animate);
     const time = Date.now() * 0.0004;
     // main_group.rotation.x = time;
     if (!mouseDown){
-        main_group.rotation.y = time * 0.3;
+        main_group.rotation.y = rotate;
+        rotate += 0.008;
 
     }
     // Make the spheres rotate
     // for (let key in spheres){
     //     spheres[key].mesh.rotation.y = -time;
     // }
-
     strength += 0.02;
     bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.1);
     // console.log(bloomPass.strength);

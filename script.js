@@ -10,7 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 console.log("Modules loaded");
 
-const velocity_default = 0.008;
+const velocity_default = 0.000;
 
 
 // Constants and settings
@@ -26,6 +26,8 @@ const params = {
 };
 
 
+
+
 // CSS2DRenderer setup
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize( window.innerWidth, window.innerHeight );
@@ -37,6 +39,7 @@ const sphere_positions = {
     "plant_species": [0.050, 0.272, 0.052],
     "touch_interaction": [-0.265, 0.852, -0.206],
     "humidity": [0.055, 0.506, 0.018],
+    "acknowledgements": [0.02,0.025, 0.07],
 };
 
 
@@ -55,6 +58,11 @@ const spheres_description = {
     "humidity": {desc : "The humidity is measured using a capacitive sensor and sent to the computer via a socket.",
                     link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/software"},
 
+    "acknowledgements": {desc : "This project was made by Matthieu SEGUI at the DeVinci Innovation Center.\n\
+    To reach the full acknowledgements, click on the sphere.",
+                            link: "https://github.com/matthieu-sgi/Internet-of-Plants/blob/main/acknowledgements.md"},
+
+
 };
 
 // Scene setup
@@ -67,6 +75,9 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true 
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 // renderer.setClearColor(0x000000, 1); // Adding black background
+
+const axis_helper = new THREE.AxesHelper(5);
+scene.add(axis_helper);
 
 
 // Add background.jpg as background
@@ -215,7 +226,7 @@ class ClickableSphere{
     
         this.description_label = new CSS2DObject(this.description_div);
         // Set the label's position based on the sphere's coordinates
-        this.description_label.position.set(0.3, 0.1, 0); // Relative to the sphere
+        this.description_label.position.set(0.1, 0.1, 0); // Relative to the sphere
         this.description_label.scale.set(1, 1, 1);
         // Hide the label by default
         this.description_label.element.style.visibility = "hidden";
@@ -274,6 +285,8 @@ for (let key in sphere_positions){
 
 
 let loader = new GLTFLoader();
+let loaded = false;
+
 
 loader.load("assets/plant_modified.glb", function (gltf) {
     let plant_model = gltf.scene;
@@ -282,8 +295,15 @@ loader.load("assets/plant_modified.glb", function (gltf) {
     plant_model.scale.set(1, 1, 1);
     plant_model.rotation.set(0, 0, 0);
     main_group.add(plant_model);
+    loaded = true;
+    document.getElementById("loading").style.display = "none";
     // scene.add(plant_model);
-});
+},
+    function (xhr) {
+        //if 100% loaded
+        console.log((xhr.loaded / xhr.total * 100) + "% loaded");
+
+    });
 main_group.position.set(0, -0.5, 0);
 scene.add(main_group);
 
@@ -371,22 +391,31 @@ let velocity = velocity_default;
 
 
 const animate = () => {
+    // console.log(loaded)
     requestAnimationFrame(animate);
-    const time = Date.now() * 0.0004;
-    // main_group.rotation.x = time;
-    if (!mouseDown){
-        main_group.rotation.y = rotate;
-
-        velocity = THREE.MathUtils.lerp(velocity, target_velocity, 0.1);
-
-        rotate += velocity;
-
+    if (loaded){
+        const time = Date.now() * 0.0004;
+        // main_group.rotation.x = time;
+        if (!mouseDown){
+            main_group.rotation.y = rotate;
+    
+            velocity = THREE.MathUtils.lerp(velocity, target_velocity, 0.1);
+    
+            rotate += velocity;
+    
+        }
+        strength += 0.02;
+        bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.5);
+    
+        controls.update();
+        render();        
     }
-    strength += 0.02;
-    bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.5);
 
-    controls.update();
-    render();
 }
 
+// console.log("Loaded : " + loaded);  
+
+// if (loaded){
 animate();
+// }
+// animate();

@@ -76,8 +76,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 // renderer.setClearColor(0x000000, 1); // Adding black background
 
-const axis_helper = new THREE.AxesHelper(5);
-scene.add(axis_helper);
+// const axis_helper = new THREE.AxesHelper(5);
+// scene.add(axis_helper);
 
 
 // Add background.jpg as background

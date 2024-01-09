@@ -50,10 +50,10 @@ const spheres_description = {
                         link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/hardware/pcb"},
     "plant_species": {desc : "The plant species used in this project is the Pachira Glabra.",
                         link: "https://en.wikipedia.org/wiki/Pachira_glabra"},
-    "touch_interaction": {desc : "The touch interaction is captured by the ESP32 and sent to the computer via a websocket.",
-                            link: "https://www.google.com"},
-    "humidity": {desc : "The humidity is measured using a capacitive sensor and sent to the computer via a websocket.",
-                    link: "https://www.google.com"},
+    "touch_interaction": {desc : "The touch interaction is captured by the ESP32 and sent to the computer via a socket.",
+                            link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/software"},
+    "humidity": {desc : "The humidity is measured using a capacitive sensor and sent to the computer via a socket.",
+                    link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/software"},
 
 };
 
@@ -367,29 +367,6 @@ let rotate = 0;
 document.getElementById("labels-container").appendChild(labelRenderer.domElement);
 
 
-// async function requestApi(){
-//     // Create headers
-//     let headers = new Headers();
-//     // headers.append('Content-Type', 'application/json');
-//     // headers.append('Accept', 'application/json');
-//     // append Access-Control-Allow-Origin header to avoid CORS error
-//     headers.append('Access-Control-Allow-Origin', 'http://localhost:8000');
-//     // Create request
-//     let request = new Request("http://localhost:8000/api/humidity", {
-//         method: 'GET',
-//         headers: headers,
-//         // mode: 'cors'
-//     });
-//     // Send request
-//     let response = await fetch(request);
-
-
-//     // let response = await fetch("http://172.21.72.180:8000/api/humidity");
-//     let data = await response.json();
-//     console.log(data);
-//     return data;
-// }
-
 let velocity = velocity_default;
 
 
@@ -406,7 +383,7 @@ const animate = () => {
 
     }
     strength += 0.02;
-    bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.1);
+    bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.5);
 
     controls.update();
     render();

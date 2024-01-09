@@ -71,7 +71,7 @@ renderer.setPixelRatio(window.devicePixelRatio);
 
 // Add background.jpg as background
 const loader_texture = new THREE.TextureLoader();
-const background_texture = loader_texture.load("assets/background.jpg");
+const background_texture = loader_texture.load("assets/background_light.jpg");
 background_texture.mapping = THREE.EquirectangularReflectionMapping;
 background_texture.colorSpace = THREE.SRGBColorSpace;
 scene.background = background_texture;

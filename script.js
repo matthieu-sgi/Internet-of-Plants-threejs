@@ -10,7 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 console.log("Modules loaded");
 
-const velocity_default = 0.003;
+const velocity_default = 0.003  ;
 
 
 // Constants and settings
@@ -50,7 +50,7 @@ const spheres_description = {
      - an amplification circuit with a speaker\n\
      - an electronical filter to capture the touch interaction with the plant\n\
      Click on the sphere to reach the github repository.",
-                        link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/hardware/pcb"},
+                        link: "https://github.com/matthieu-sgi/Internet-of-Plants/tree/main/hardware"},
     "plant_species": {desc : "The plant species used in this project is the Pachira Glabra.",
                         link: "https://en.wikipedia.org/wiki/Pachira_glabra"},
     "touch_interaction": {desc : "The touch interaction is captured by the ESP32 and sent to the computer via a socket.",
@@ -286,16 +286,19 @@ for (let key in sphere_positions){
 
 let loader = new GLTFLoader();
 let loaded = false;
+let plant_model;
+let default_vertices = null;
 
 
 loader.load("assets/plant_modified.glb", function (gltf) {
-    let plant_model = gltf.scene;
+    plant_model = gltf.scene;
     // Adjust the position, scale, or rotation if necessary
     plant_model.position.set(0, 0, 0);
     plant_model.scale.set(1, 1, 1);
     plant_model.rotation.set(0, 0, 0);
     main_group.add(plant_model);
     loaded = true;
+    default_vertices = plant_model.children[0].geometry.attributes.position.array;
     document.getElementById("loading").style.display = "none";
     // scene.add(plant_model);
 },
@@ -394,7 +397,7 @@ const animate = () => {
     // console.log(loaded)
     requestAnimationFrame(animate);
     if (loaded){
-        const time = Date.now() * 0.0004;
+        const time = Date.now() * 0.03;
         // main_group.rotation.x = time;
         if (!mouseDown){
             main_group.rotation.y = rotate;
@@ -404,6 +407,40 @@ const animate = () => {
             rotate += velocity;
     
         }
+        // Deform the plant_model mesh
+        // console.log("starting deformation");
+        // //deform the y position of the vertices of the plant that are above a certain threshold
+        // for(let i = 0; i < plant_model.children[0].geometry.attributes.position.array.length; i+=3){
+        //     if (plant_model.children[0].geometry.attributes.position.array[i+1] > 0.5){
+        //         //randomly deform the vertices
+        //         let random_coeff = Math.random() * 0.01;
+        //         plant_model.children[0].geometry.attributes.position.array[i+1] += it  Math.sin(time * 0.5) * random_coeff;
+        //         // random_coeff = Math.random() * 0.01;
+        //         plant_model.children[0].geometry.attributes.position.array[i] +=  Math.sin(time * 0.5) * random_coeff;
+        //         plant_model.children[0].geometry.attributes.position.array[i+2] += Math.sin(time * 0.5) * random_coeff;
+        //     }
+        // }
+
+        
+
+        // // for(let i = 0; i < 100; i++){
+        // //     let random_index = Math.floor(Math.random() * plant_model.children[0].geometry.attributes.position.array.length);
+        // //     console.log(random_index);
+        // //     plant_model.children[0].geometry.attributes.position.array[random_index] += Math.sin(time * 0.5) * 1;
+        // // }
+        // console.log("ending deformation");
+        // plant_model.children[0].geometry.attributes.position.needsUpdate = true;
+
+
+        // for(let i = 0; i < plant_model.children[0].geometry.attributes.position.array.length; i+=3){
+        //     plant_model.children[0].geometry.attributes.position.array[i+1] += Math.sin(time * 0.5) * 0.01;
+        // }
+        // console.log("vertices", plant_model.children[0].geometry);
+        // plant_model.children[0].scale.y = Math.abs(Math.sin(time * 0.5)) + 0.5;
+
+
+
+
         strength += 0.02;
         bloomPass.strength = Math.abs(Math.sin(strength) * 0.5 +0.5);
     
